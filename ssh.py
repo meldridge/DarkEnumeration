@@ -14,6 +14,22 @@ def keys(ip_address):
 	sshvuln = vulnssh + " " + ip_address
 	subprocess.call(sshvuln, shell=True)
 
+	print "Running nmap SSH scripts"
+	sshnse = "nmap -sS -p22 --script ssh* %s -oA /tmp/%s/ssh-nse" % (ip_address, ip_address)
+	subprocess.call(sshnse, shell=True)
+  
+	print "Testing for hardcoded SSH keys"
+	authorized_fingerprints = "/root/git/ssh-badkeys/authorized/authorized-fingerprints.txt"
+	host_fingerprints = "/root/git/ssh-badkeys/host/host-fingerprints.txt"
+		
+	keyscanfile = "/tmp/%s/ssh-keyscan.txt" % ip_address
+	os.system("ssh-keyscan %s > %s" % (ip_address, keyscanfile))
+		
+	print "Checking for authorised keys:"
+	os.system("ssh-keygen -l -f %s | cut -d' ' -f2 | grep %s" % (keyscanfile, authorized_fingerprints))
+	print "Checking host keys:"
+	os.system("ssh-keygen -l -f %s | cut -d' ' -f2 | grep %s" % (keyscanfile, host_fingerprints))
+
 def main():
 	keys(ip_address)
 

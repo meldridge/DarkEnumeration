@@ -87,23 +87,30 @@ def unicorn(ip_address):
 	udptest = "unicornscan -mU -p1-65535 -r500 -I %s" % ip_address
 	calludpscan = subprocess.Popen(udptest, stdout=subprocess.PIPE, shell=True)
 	calludpscan.wait()
-
-# populate tcp service names & ports
+	
+	# populate tcp service names & ports
 	tcpports = []
 	tcpservice = []
 	for lines in calltcpscan.stdout:
 		if re.search('\[([\s0-9{1,5}]+)\]',lines):
 			linez = re.split('\W+', lines)
-			services = [x for x in linez if x][2]
-			ports = [x for x in linez if x][3]
+			service = [x for x in linez if x][2]
+			port = [x for x in linez if x][3]			
 			if service not in tcpservice:
 				tcpservice.append(service)
 			if port not in tcpports:
 				tcpports.append(port)
+	
+	if tcpports:
+		print "TCP: " +  str(tcpservice) + " on ports " + str(tcpports)
+	else:
+		print "[!][!] No TCP services open on " + "%s" % ip_address
+		
+	# Store TCP ports and services
 	tcpport_dict = tcpports
 	tcpserv_dict = tcpservice
 
-# populate udp service names & ports
+	# populate udp service names & ports
 	udpports = []
 	udpservice = []
 	for lines in calludpscan.stdout:
@@ -116,26 +123,32 @@ def unicorn(ip_address):
 			if port not in udpports:
 				udpports.append(port)
 	
+	if udpports:
+		print "UDP: " + str(udpservice) + " on ports " + str(udpports)
+	else:
+		print "[!][!] No UDP services open on " + "%s" % ip_address 
+		
+	# Store UDP ports and services
 	udpport_dict = udpports
 	udpserv_dict = udpservice
 	
-# print out unicornscan findings to a document
+	raw_input("Press Enter to start writing Unicorn results")
+		
+	# print out unicornscan findings to a document
 	usout = open('/tmp/' + ip_address + '/unicorn','w')
-	try:
-		usout.write(ip_address + " " + tcpserv_dict + ":" + tcpport_dict + '\n')
-		usout.write(ip_address + " " + udpserv_dict + ":" + udpport_dict + '\n')
-		usout.write("plug n' play manual edition:\n")
-		usout.write(ip_address + "=:" + tcpport_dict + ",U:" udpport_dict + '\n\n')
-	except:
-		break
+	usout.write(ip_address + " " + ",".join(tcpserv_dict) + ":" + ",".join(tcpport_dict) + '\n')
+	usout.write(ip_address + " " + ",".join(udpserv_dict) + ":" + ",".join(udpport_dict) + '\n')
+	usout.write("plug n' play manual edition:\n")
+	usout.write(ip_address + "=:" + ",".join(tcpport_dict) + ",U:" + ",".join(udpport_dict) + '\n\n')
+	usout.close()
 
-# Kick off intrusive Nmap scanning
+	# Kick off intrusive Nmap scanning
 	jobs = []
 	mp = multiprocessing.Process(target=intrusive, args=(ip_address,))
 	jobs.append(mp)
 	mp.start()
 
-# Kick off standalone python scripts to further enumerate each service
+	# Kick off standalone python scripts to further enumerate each service
 	for service, port in zip(tcpserv_dict,tcpport_dict): 
 		if (service == "http") and (port == "80"):
 			print "[!] Detected HTTP on " + ip_address + ":" + port + " (TCP)"
