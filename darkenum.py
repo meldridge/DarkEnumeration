@@ -5,6 +5,12 @@
 import subprocess, multiprocessing, os, time, re
 from multiprocessing import Process, Queue
 
+# Sleep time between sub-scans
+sleeptime=60
+
+# Packets per second for Unicorn scan (important!)
+unicorn_pps=500
+
 # Kick off multiprocessing
 def xProc(targetin, target, port):
 	jobs = []
@@ -65,6 +71,7 @@ def samba(ip_address, port):
 def intrusive(ip_address):
 	print "[*] Unicornscan on " + ip_address + " completed. Running Intrusive NMAP scans against target."
 	cmd = "nmap -Pn -sTU -pT:" + ','.join(tcpport_dict) + ",U:" + ','.join(udpport_dict) + " --open -sC -sV -O %s -oA /tmp/%s/intrusivescan" % (ip_address, ip_address)
+	print "[*] Nmap command: " + cmd
 	os.system("gnome-terminal -e 'bash -c \"" + cmd + "\"'")	
 
 def unicorn(ip_address):
@@ -74,17 +81,17 @@ def unicorn(ip_address):
 	global tcpserv_dict
 	global udpport_dict
 	global udpserv_dict
-	tcpport_dict = {}
-	tcpserv_dict = {}
-	udpport_dict = {}
-	udpserv_dict = {}
+	tcpport_dict = []
+	tcpserv_dict = []
+	udpport_dict = []
+	udpserv_dict = []
 	
 	#tcp scan
-	tcptest = "unicornscan -mT -p1-65535 -r500 -I %s" % ip_address
+	tcptest = "unicornscan -mT -p1-65535 -r%s -I %s" % (unicorn_pps, ip_address)
 	calltcpscan = subprocess.Popen(tcptest, stdout=subprocess.PIPE, shell=True)
 	calltcpscan.wait()
 	#udp scan 
-	udptest = "unicornscan -mU -p1-65535 -r500 -I %s" % ip_address
+	udptest = "unicornscan -mU -p1-65535 -r%s -I %s" % (unicorn_pps, ip_address)
 	calludpscan = subprocess.Popen(udptest, stdout=subprocess.PIPE, shell=True)
 	calludpscan.wait()
 	
@@ -92,14 +99,15 @@ def unicorn(ip_address):
 	tcpports = []
 	tcpservice = []
 	for lines in calltcpscan.stdout:
-		if re.search('\[([\s0-9{1,5}]+)\]',lines):
-			linez = re.split('\W+', lines)
+		if ("[" in lines):
+			print lines
+			lines = lines.replace('[', ' ')
+			lines = lines.replace(']', ' ')
+			linez = re.split("\s", lines)
 			service = [x for x in linez if x][2]
 			port = [x for x in linez if x][3]			
-			if service not in tcpservice:
-				tcpservice.append(service)
-			if port not in tcpports:
-				tcpports.append(port)
+			tcpservice.append(service)
+			tcpports.append(port)
 	
 	if tcpports:
 		print "TCP: " +  str(tcpservice) + " on ports " + str(tcpports)
@@ -114,14 +122,14 @@ def unicorn(ip_address):
 	udpports = []
 	udpservice = []
 	for lines in calludpscan.stdout:
-		if re.search('\[([\s0-9{1,5}]+)\]',lines):
-			linez = re.split('\W+', lines)
-			services = [x for x in linez if x][2]
-			ports = [x for x in linez if x][3]
-			if service not in udpservice:
-				udpservice.append(service)
-			if port not in udpports:
-				udpports.append(port)
+		if ("[" in lines):
+			lines = lines.replace('[', ' ')
+			lines = lines.replace(']', ' ')
+			linez = re.split("\s", lines)
+			service = [x for x in linez if x][2]
+			port = [x for x in linez if x][3]
+			udpservice.append(service)
+			udpports.append(port)
 	
 	if udpports:
 		print "UDP: " + str(udpservice) + " on ports " + str(udpports)
@@ -132,7 +140,7 @@ def unicorn(ip_address):
 	udpport_dict = udpports
 	udpserv_dict = udpservice
 	
-	raw_input("Press Enter to start writing Unicorn results")
+	raw_input("Waiting...")
 		
 	# print out unicornscan findings to a document
 	usout = open('/tmp/' + ip_address + '/unicorn','w')
@@ -152,48 +160,49 @@ def unicorn(ip_address):
 	for service, port in zip(tcpserv_dict,tcpport_dict): 
 		if (service == "http") and (port == "80"):
 			print "[!] Detected HTTP on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(60)
+			time.sleep(sleeptime)
 			xProc(http, ip_address, None)
 	
 		elif (service == "https") and (port == "443"):
 			print "[!] Detected SSL on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(240)
+			time.sleep(sleeptime)
 			xProc(https, ip_address, None)
 
 		elif (service == "ssh") and (port == "22"):
 			print "[!] Detected SSH on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(60)
+			time.sleep(sleeptime)
 			xProc(ssh, ip_address, None)
 
 		elif (service == "smtp") and (port == "25"):
 			print "[!] Detected SMTP on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(60)
+			time.sleep(sleeptime)
 			xProc(smtp, ip_address, None)
 
 		elif (service == "microsoft-ds") and (port == "445") and (port == "139"):
 			print "[!] Detected Samba on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(60)
+			time.sleep(sleeptime)
 			xProc(samba, ip_address, None)
 
 		elif (service == "ms-sql") and (port == "1433"):
 			print "[!] Detected MS-SQL on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(60)
+			time.sleep(sleeptime)
 			xProc(mssql, ip_address, None)
 	
 		elif (service == "mysql") and (port == "3306"):
 			print "[!] Detected MYSQL on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(60)
+			time.sleep(sleeptime)
 			xProc(mysql, ip_address, None)			
 
-		for service, port in zip(udpserv_dict,udpport_dict):
-			if (service == "snmp") and (port == "161"):
-				print "[!] Detected snmp on " + ip_address + ":" + port + " (UDP)"
-				time.sleep(180)
-				xProc(snmp, ip_address, None)
-			elif (service == "netbios") and (port == "137") or (port == "138"):
-				print "[!] Netbios detected on UDP. If nmap states the tcp port is vulnerable, run '-pT:445,U:137' to eliminate false positive"
-			else:
-				print "[*] Nmap intrusive scan output should be thoroughly reviewed at /tmp/" + ip_address
+	# Iterate over all found UDP services:
+	for service, port in zip(udpserv_dict,udpport_dict):
+		if (service == "snmp") and (port == "161"):
+			print "[!] Detected snmp on " + ip_address + ":" + port + " (UDP)"
+			time.sleep(180)
+			xProc(snmp, ip_address, None)
+		elif (service == "netbios") and (port == "137") or (port == "138"):
+			print "[!] Netbios detected on UDP. If nmap states the tcp port is vulnerable, run '-pT:445,U:137' to eliminate false positive"
+
+	print "[*] Scans complete. Nmap intrusive scan output should be thoroughly reviewed at /tmp/" + ip_address
 
 print "############################################################"
 print "####                                                    ####"
