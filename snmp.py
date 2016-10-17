@@ -17,15 +17,9 @@ def walk(ip_address):
 def onesixtyone(ip_address):
 	print "[*] Grabbing more SNMP data from " + ip_address
 	for string in community:
-		if ("public" in string):
-			rgr = "onesixtyone -c public %s > /tmp/%s/onesixtyone_public" % (ip_address, ip_address)
-			subprocess.call(rgr, shell=True)
-		elif ("private" in string):
-			rgr = "onesixtyone -c private %s > /tmp/%s/onesixtyone_private" % (ip_address, ip_address)
-			subprocess.call(rgr, shell=True)
-		elif ("manager" in string):
-			rgr = "onesixtyone -c manager %s > /tmp/%s/onesixtyone_manager" % (ip_address, ip_address)
-			subprocess.call(rgr, shell=True)
+		rgr = "onesixtyone -c %s %s > /tmp/%s/onesixtyone_%s" % (string, ip_address, ip_address, string)
+		subprocess.call(rgr, shell=True)
+		
 def main():
 	walk(ip_address)
 	onesixtyone(ip_address)

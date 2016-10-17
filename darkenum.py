@@ -100,7 +100,6 @@ def unicorn(ip_address):
 	tcpservice = []
 	for lines in calltcpscan.stdout:
 		if ("[" in lines):
-			print lines
 			lines = lines.replace('[', ' ')
 			lines = lines.replace(']', ' ')
 			linez = re.split("\s", lines)
@@ -139,8 +138,6 @@ def unicorn(ip_address):
 	# Store UDP ports and services
 	udpport_dict = udpports
 	udpserv_dict = udpservice
-	
-	raw_input("Waiting...")
 		
 	# print out unicornscan findings to a document
 	usout = open('/tmp/' + ip_address + '/unicorn','w')
@@ -155,6 +152,8 @@ def unicorn(ip_address):
 	mp = multiprocessing.Process(target=intrusive, args=(ip_address,))
 	jobs.append(mp)
 	mp.start()
+	
+	raw_input("Press Enter to proceed with additional scripts...")
 
 	# Kick off standalone python scripts to further enumerate each service
 	for service, port in zip(tcpserv_dict,tcpport_dict): 
@@ -178,7 +177,7 @@ def unicorn(ip_address):
 			time.sleep(sleeptime)
 			xProc(smtp, ip_address, None)
 
-		elif (service == "microsoft-ds") and (port == "445") and (port == "139"):
+		elif (service == "microsoft-ds") and ((port == "445") or (port == "139")):
 			print "[!] Detected Samba on " + ip_address + ":" + port + " (TCP)"
 			time.sleep(sleeptime)
 			xProc(samba, ip_address, None)
@@ -197,7 +196,7 @@ def unicorn(ip_address):
 	for service, port in zip(udpserv_dict,udpport_dict):
 		if (service == "snmp") and (port == "161"):
 			print "[!] Detected snmp on " + ip_address + ":" + port + " (UDP)"
-			time.sleep(180)
+			time.sleep(sleeptime)
 			xProc(snmp, ip_address, None)
 		elif (service == "netbios") and (port == "137") or (port == "138"):
 			print "[!] Netbios detected on UDP. If nmap states the tcp port is vulnerable, run '-pT:445,U:137' to eliminate false positive"

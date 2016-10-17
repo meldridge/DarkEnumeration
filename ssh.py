@@ -15,7 +15,7 @@ def keys(ip_address):
 	subprocess.call(sshvuln, shell=True)
 
 	print "Running nmap SSH scripts"
-	sshnse = "nmap -sS -p22 --script ssh* %s -oA /tmp/%s/ssh-nse" % (ip_address, ip_address)
+	sshnse = "nmap -sS -p22 --script ssh2-enum-algos.nse,ssh-hostkey.nse,sshv1.nse %s -oA /tmp/%s/ssh-nse" % (ip_address, ip_address)
 	subprocess.call(sshnse, shell=True)
   
 	print "Testing for hardcoded SSH keys"
@@ -23,7 +23,7 @@ def keys(ip_address):
 	host_fingerprints = "/root/git/ssh-badkeys/host/host-fingerprints.txt"
 		
 	keyscanfile = "/tmp/%s/ssh-keyscan.txt" % ip_address
-	os.system("ssh-keyscan %s > %s" % (ip_address, keyscanfile))
+	os.system("ssh-keyscan %s > %s 2> /dev/null" % (ip_address, keyscanfile))
 		
 	print "Checking for authorised keys:"
 	os.system("ssh-keygen -l -f %s | cut -d' ' -f2 | grep %s" % (keyscanfile, authorized_fingerprints))
