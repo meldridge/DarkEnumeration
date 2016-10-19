@@ -52,7 +52,7 @@ def wfuzz(url):
 
 def nikto(url):
 	print "[!] Launching Nikto for " + url
-	cmd = "nikto -Format txt -o /tmp/%s/nikto_http -h %s" % (ip_address, url)
+	cmd = "nikto -Format txt -o /tmp/%s/nikto_https -h %s" % (ip_address, url)
 	os.system("gnome-terminal -e 'bash -c \"" + cmd + "\";bash'")
 	
 def davtest(url):

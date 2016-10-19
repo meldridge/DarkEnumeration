@@ -153,7 +153,7 @@ def unicorn(ip_address):
 	jobs.append(mp)
 	mp.start()
 	
-	raw_input("Press Enter to proceed with additional scripts...")
+#	raw_input("Press Enter to proceed with additional scripts...")
 
 	# Kick off standalone python scripts to further enumerate each service
 	for service, port in zip(tcpserv_dict,tcpport_dict): 
