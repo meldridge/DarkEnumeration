@@ -2,7 +2,7 @@
 # Script to enumerate a given list of livehosts
 
 # Module Importations
-import subprocess, multiprocessing, os, time, re
+import sys, subprocess, multiprocessing, os, time, re
 from multiprocessing import Process, Queue
 
 # Sleep time between sub-scans
@@ -10,6 +10,9 @@ sleeptime=60
 
 # Packets per second for Unicorn scan (important!)
 unicorn_pps=500
+#unicorn_ports="1-65535"
+unicorn_ports="80"
+unicorn_repeats="2"
 
 # Kick off multiprocessing
 def xProc(targetin, target, port):
@@ -35,13 +38,13 @@ def https(ip_address, port):
 def mssql(ip_address, port):
 	print "[*] Launching MSSQL scripts on " + ip_address
 	mssqlscript = "~/Scripts/mssql.py %s" % (ip_address)
-	os.system("gnome-terminal -e 'bash -c \"" + mssqlscript + "\"'")
+	os.system("gnome-terminal -e 'bash -c \"" + mssqlscript + "\";bash'")
      	return
 
 def mysql(ip_address, port):
 	print "[*] Launching MYSQL scripts on " + ip_address
 	mysqlscript = "~/Scripts/mysql.py %s" % (ip_address)
-	os.system("gnome-terminal -e 'bash -c \"" + mysqlscript + "\"'")
+	os.system("gnome-terminal -e 'bash -c \"" + mysqlscript + "\";bash'")
      	return    
 
 def ssh(ip_address, port):
@@ -53,7 +56,7 @@ def ssh(ip_address, port):
 def snmp(ip_address, port):
 	print "[*] Launching SNMP scripts on " + ip_address   
 	snmpscript = "~/Scripts/snmp.py %s" % (ip_address)
-	os.system("gnome-terminal -e 'bash -c \"" + snmpscript + "\"'") 
+	os.system("gnome-terminal -e 'bash -c \"" + snmpscript + "\";bash'") 
 	return
 
 def smtp(ip_address, port):
@@ -65,14 +68,15 @@ def smtp(ip_address, port):
 def samba(ip_address, port):
 	print "[*] Launching SAMBA scripts on " + ip_address
 	sambascript = "~/Scripts/samba.py %s" % (ip_address)
-	os.system("gnome-terminal -e 'bash -c \"" + sambascript + "\"'")
+	os.system("gnome-terminal -e 'bash -c \"" + sambascript + "\";bash'")
 	return
 
 def intrusive(ip_address):
-	print "[*] Unicornscan on " + ip_address + " completed. Running Intrusive NMAP scans against target."
-	cmd = "nmap -Pn -sTU -pT:" + ','.join(tcpport_dict) + ",U:" + ','.join(udpport_dict) + " --open -sC -sV -O %s -oA /tmp/%s/intrusivescan" % (ip_address, ip_address)
+	print "[*] Running Intrusive NMAP scans against target."
+	outfile = "/tmp/" + ip_address + "/intrusivescan"
+	cmd = "nmap -n -v -Pn --open -sSU -A -pT:" + ','.join(tcpport_dict) + ",U:" + ','.join(udpport_dict) + " -oA %s %s" % (outfile, ip_address)
 	print "[*] Nmap command: " + cmd
-	os.system("gnome-terminal -e 'bash -c \"" + cmd + "\"'")	
+	os.system("gnome-terminal -e 'bash -c \"" + cmd + "\";bash'")	
 
 def unicorn(ip_address):
 	ip_address = ip_address.strip()
@@ -87,7 +91,8 @@ def unicorn(ip_address):
 	udpserv_dict = []
 	
 	#tcp scan
-	tcptest = "unicornscan -mT -p1-65535 -r%s -I %s" % (unicorn_pps, ip_address)
+	tcptest = "unicornscan -m T -p %s -r %s -R %s -I %s" % (unicorn_ports, unicorn_pps, unicorn_repeats, ip_address)
+#	print "[*] " + tcptest
 	calltcpscan = subprocess.Popen(tcptest, stdout=subprocess.PIPE, shell=True)
 	calltcpscan.wait()
 	
@@ -114,7 +119,8 @@ def unicorn(ip_address):
 	tcpserv_dict = tcpservice
 	
 	#udp scan 
-	udptest = "unicornscan -mU -p1-65535 -r%s -I %s" % (unicorn_pps, ip_address)
+	udptest = "unicornscan -m U -p %s -r %s -R %s -I %s" % (unicorn_ports, unicorn_pps, unicorn_repeats, ip_address)
+#	print "[*] " + udptest
 	calludpscan = subprocess.Popen(udptest, stdout=subprocess.PIPE, shell=True)
 	calludpscan.wait()
 
@@ -154,16 +160,15 @@ def unicorn(ip_address):
 	jobs.append(mp)
 	mp.start()
 	
-#	raw_input("Press Enter to proceed with additional scripts...")
-
+#	time.sleep(sleeptime)
+	
 	# Kick off standalone python scripts to further enumerate each service
 	for service, port in zip(tcpserv_dict,tcpport_dict): 
-		if (service == "http") and (port == "80"):
+		if (service == "http"):
 			print "[!] Detected HTTP on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(sleeptime)
 			xProc(http, ip_address, None)
 	
-		elif (service == "https") and (port == "443"):
+		elif (service == "https"):
 			print "[!] Detected SSL on " + ip_address + ":" + port + " (TCP)"
 			time.sleep(sleeptime)
 			xProc(https, ip_address, None)

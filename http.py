@@ -8,67 +8,93 @@ if len(sys.argv) != 2:
 
 ip_address = str(sys.argv[1])
 url =  "http://" + ip_address
+path = "/tmp/" + ip_address + "/http_"
 
-dirblist = ["/usr/share/dirb/wordlists/big.txt", "/usr/share/dirb/wordlists/vulns/cgis.txt"]
-wfuzzlist = ["/usr/share/wfuzz/wordlist/general/big.txt", "/usr/share/wfuzz/wordlist/vulns/cgis.txt"]
+wfuzzlist = ["/usr/share/wfuzz/wordlist/general/common.txt", "/usr/share/wfuzz/wordlist/vulns/cgis.txt"]
 
-def dirb(url):
-	print "[!] Starting dirb scan for " + url
-	for wordlist in dirblist:
-		if ("big" in wordlist):
-			outfile = "-o " + "/tmp/" + ip_address + "/dirb_http_big.txt"
-			dirb = "dirb " + str(url) + " " + str(wordlist) + " " + str(outfile) + " -r"
-			subprocess.call(dirb, shell=True)
-		elif ("cgis" in wordlist):
-			time.sleep(30)
-			outfile2 = "-o " + "/tmp/" + ip_address + "/dirb_http_cgis.txt"
-			dirb = "dirb " + str(url) + " " + str(wordlist) + " " + str(outfile2) + " -r"
-			subprocess.call(dirb, shell=True)
+def banner(text, ch='=', length=78):
+    spaced_text = ' %s ' % text
+    banner = spaced_text.center(length, ch)
+    return banner
 
-def gobuster(url):
-	print "[!] Starting gobuster scan for " + url
-	for wordlist in dirblist:
-		if ("big" in wordlist):
-			time.sleep(2)
-			gobuster = "gobuster -u " + url + " -w " +  str(wordlist) + " -s '200,204,301,302,307,403,500'"
-			os.system("gnome-terminal -e 'bash -c \"" + gobuster + "\";bash'")
-		elif ("cgis" in wordlist):
-			time.sleep(2)
-			gobuster = "gobuster -u " + url + " -w " +  str(wordlist) + " -s '200,204,301,302,307,403,500'"
-			os.system("gnome-terminal -e 'bash -c \"" + gobuster + "\";bash'")
-			
-def wfuzz(url):
-	print "[!] Starting wfuzz scan for " + url
-	for wordlist in wfuzzlist:
-		if ("big" in wordlist):
-			time.sleep(2)
-			wfuzz = "wfuzz --hc 404,403 -c -z file," + wordlist + " " + url + "/FUZZ"
-			os.system("gnome-terminal -e 'bash -c \"" + wfuzz + "\";bash'")
-		elif ("cgis" in wordlist):
-			time.sleep(2)
-			wfuzz = "wfuzz --hc 404,403 -c -z file," + wordlist + " " + url + "/FUZZ"
-			os.system("gnome-terminal -e 'bash -c \"" + wfuzz + "\";bash'")
+def spawnBash(cmd):
+    # Launch a new terminal window for the provided command
+    os.system("gnome-terminal -e 'bash -c \"" + cmd + "\";bash'") 
+
+def davtest(url):
+    # Davtest launches in the same terminal window
+    print banner("davtest")
+    cmd = "davtest -cleanup -url " + url
+#    print "[*] " + cmd
+    subprocess.call(cmd, shell=True)
+    print "\n\n"
 
 def nikto(url):
-	print "[!] Launching Nikto for " + url
-	cmd = "nikto -Format txt -o /tmp/%s/nikto_http -h %s" % (ip_address, url)
-	os.system("gnome-terminal -e 'bash -c \"" + cmd + "\";bash'")
+    # Nikto launches in a separate terminal
+    outfile = path + "nikto.txt"
+    cmd = "nikto -Format txt -output " + outfile + " -host " + ip_address + " | tee " + outfile + ".teed"
+#    print "[*] " + cmd
+    spawnBash(cmd)
+
+def dirb(url):
+    # Dirb and gobuster launch in the same terminal window
+    print banner("dirb scan (common)")
+    outfile = path + "dirb_common.txt"
+    cmd = "dirb " + str(url) + " /usr/share/dirb/wordlists/common.txt -r -o " + outfile
+    print "[*] " + cmd
+    subprocess.call(cmd, shell=True)
+    
+    print banner("dirb scan (cgis)")
+    outfile = path + "dirb_cgis.txt"
+    cmd = "dirb " + str(url) + " /usr/share/dirb/wordlists/vulns/cgis.txt -r -o " + outfile
+    print "[*] " + cmd
+    subprocess.call(cmd, shell=True)
+    
+    print "\n\n"
+
+def gobuster(url):
+    # Dirb and gobuster launch in the same terminal window
+    print banner("gobuster scan (common)")
+    outfile = path + "gobuster_common.txt"
+    cmd = "gobuster -u " + url + " -w /usr/share/seclists/Discovery/Web_Content/common.txt | tee " + outfile
+    print "[*] " + cmd
+    subprocess.call(cmd, shell=True)
 	
-def davtest(url):
-	print "[!] Launching davtest for " + url
-	cmd = "davtest -url %s -cleanup" % (url)
-	os.system("gnome-terminal -e 'bash -c \"" + cmd + "\";bash'") 
+    print banner("gobuster scan (cgis)")
+    outfile = path + "gobuster_cgis.txt"
+    cmd = "gobuster -u " + url + " -w /usr/share/seclists/Discovery/Web_Content/cgis.txt | tee " + outfile
+    print "[*] " + cmd
+    subprocess.call(cmd, shell=True)
+    
+    print "\n\n"
+			
+def wfuzz(url):
+    print "[*] Starting wfuzz scan for " + url
+    for wordlist in wfuzzlist:
+        if ("big" in wordlist):
+            time.sleep(2)
+            wfuzz = "wfuzz --hc 404,403 -c -z file," + wordlist + " " + url + "/FUZZ"
+            os.system("gnome-terminal -e 'bash -c \"" + wfuzz + "\";bash'")
+        elif ("cgis" in wordlist):
+            time.sleep(2)
+            wfuzz = "wfuzz --hc 404,403 -c -z file," + wordlist + " " + url + "/FUZZ"
+            os.system("gnome-terminal -e 'bash -c \"" + wfuzz + "\";bash'")
 
 def main():
-	nikto(url)
-	time.sleep(2)
-	dirb(url)
-	time.sleep(2)
-	gobuster(url)
-	time.sleep(2)
-	wfuzz(url)
-	time.sleep(2)
-	davtest(url)
+    print banner("HTTP Testing")
+    print banner("" + url)
+    print "\n"
+    
+    # Nikto launches in a new bash window
+    nikto(url)
+    
+    # Remaining tests
+    davtest(url)
+    dirb(url)
+    gobuster(url)
+#    wfuzz(url)
+#    time.sleep(2)
+
 
 if __name__=='__main__':
 	main()
