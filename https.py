@@ -16,12 +16,12 @@ def dirb(url):
 	print "[!] Starting dirb scan for " + url
 	for wordlist in dirblist:
 		if ("big" in wordlist):
-			outfile = "-o " + "/tmp/" + ip_address + "/dirb_big.txt"
+			outfile = "-o " + "/tmp/" + ip_address + "/dirb_https_big.txt"
 			dirb = "dirb " + str(url) + " " + str(wordlist) + " " + str(outfile) + " -r"
 			subprocess.call(dirb, shell=True)
 		elif ("cgis" in wordlist):
 			time.sleep(30)
-			outfile2 = "-o " + "/tmp/" + ip_address + "/dirb_cgis.txt"
+			outfile2 = "-o " + "/tmp/" + ip_address + "/dirb_https_cgis.txt"
 			dirb = "dirb " + str(url) + " " + str(wordlist) + " " + str(outfile2) + " -r"
 			subprocess.call(dirb, shell=True)
 
@@ -34,7 +34,6 @@ def gobuster(url):
 			os.system("gnome-terminal -e 'bash -c \"" + gobuster + "\";bash'")
 		elif ("cgis" in wordlist):
 			time.sleep(2)
-			outfile2 = "> " + "/tmp/" + ip_address + "/gobuster_cgis.txt"
 			gobuster = "gobuster -u " + url + " -w " +  str(wordlist) + " -s '200,204,301,302,307,403,500'"
 			os.system("gnome-terminal -e 'bash -c \"" + gobuster + "\";bash'")
 			

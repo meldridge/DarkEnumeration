@@ -90,10 +90,6 @@ def unicorn(ip_address):
 	tcptest = "unicornscan -mT -p1-65535 -r%s -I %s" % (unicorn_pps, ip_address)
 	calltcpscan = subprocess.Popen(tcptest, stdout=subprocess.PIPE, shell=True)
 	calltcpscan.wait()
-	#udp scan 
-	udptest = "unicornscan -mU -p1-65535 -r%s -I %s" % (unicorn_pps, ip_address)
-	calludpscan = subprocess.Popen(udptest, stdout=subprocess.PIPE, shell=True)
-	calludpscan.wait()
 	
 	# populate tcp service names & ports
 	tcpports = []
@@ -116,6 +112,11 @@ def unicorn(ip_address):
 	# Store TCP ports and services
 	tcpport_dict = tcpports
 	tcpserv_dict = tcpservice
+	
+	#udp scan 
+	udptest = "unicornscan -mU -p1-65535 -r%s -I %s" % (unicorn_pps, ip_address)
+	calludpscan = subprocess.Popen(udptest, stdout=subprocess.PIPE, shell=True)
+	calludpscan.wait()
 
 	# populate udp service names & ports
 	udpports = []
