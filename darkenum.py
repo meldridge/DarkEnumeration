@@ -10,8 +10,8 @@ sleeptime=60
 
 # Packets per second for Unicorn scan (important!)
 unicorn_pps=300
-#unicorn_ports="1-65535"
-unicorn_ports="80-445"
+unicorn_ports="1-65535"
+#unicorn_ports="80-445"
 unicorn_repeats="1"
 
 # Kick off multiprocessing
