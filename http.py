@@ -2,20 +2,30 @@
 
 import sys, os, subprocess, re, time
 
-if len(sys.argv) != 2:
-    print "Usage: ./http.py <target>"
+if len(sys.argv) != 4:
+    print "Usage: ./http.py <protocol> <host> <port>"
     sys.exit(0)
 
-ip_address = str(sys.argv[1])
-url =  "http://" + ip_address
-path = "/tmp/" + ip_address + "/http_"
+protocol = str(sys.argv[1])
+ip_address = str(sys.argv[2])
+port = str(sys.argv[3])
+url =  "%s://%s:%s" % (protocol, ip_address, port)
+path = "/tmp/%s/%s-p%s_" % (ip_address, protocol, port)
 
-wfuzzlist = ["/usr/share/wfuzz/wordlist/general/common.txt", "/usr/share/wfuzz/wordlist/vulns/cgis.txt"]
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
-def banner(text, ch='=', length=78):
+def banner(text, ch='#', length=78):
     spaced_text = ' %s ' % text
     banner = spaced_text.center(length, ch)
-    return banner
+    return bcolors.WARNING + banner + bcolors.ENDC
 
 def spawnBash(cmd):
     # Launch a new terminal window for the provided command
@@ -27,12 +37,12 @@ def davtest(url):
     cmd = "davtest -cleanup -url " + url
 #    print "[*] " + cmd
     subprocess.call(cmd, shell=True)
-    print "\n\n"
+    print "\n"
 
 def nikto(url):
     # Nikto launches in a separate terminal
     outfile = path + "nikto.txt"
-    cmd = "nikto -Format txt -output " + outfile + " -host " + ip_address + " | tee " + outfile + ".teed"
+    cmd = "nikto -Format txt -output " + outfile + " -host " + url + " | tee " + outfile + ".teed"
 #    print "[*] " + cmd
     spawnBash(cmd)
 
@@ -43,6 +53,8 @@ def dirb(url):
     cmd = "dirb " + str(url) + " /usr/share/dirb/wordlists/common.txt -r -o " + outfile
     print "[*] " + cmd
     subprocess.call(cmd, shell=True)
+    
+    print ""
     
     print banner("dirb scan (cgis)")
     outfile = path + "dirb_cgis.txt"
@@ -59,6 +71,8 @@ def gobuster(url):
     cmd = "gobuster -u " + url + " -w /usr/share/seclists/Discovery/Web_Content/common.txt | tee " + outfile
     print "[*] " + cmd
     subprocess.call(cmd, shell=True)
+    
+    print ""
 	
     print banner("gobuster scan (cgis)")
     outfile = path + "gobuster_cgis.txt"
@@ -69,6 +83,7 @@ def gobuster(url):
     print "\n\n"
 			
 def wfuzz(url):
+    wfuzzlist = ["/usr/share/wfuzz/wordlist/general/common.txt", "/usr/share/wfuzz/wordlist/vulns/cgis.txt"]
     print "[*] Starting wfuzz scan for " + url
     for wordlist in wfuzzlist:
         if ("big" in wordlist):
@@ -81,8 +96,9 @@ def wfuzz(url):
             os.system("gnome-terminal -e 'bash -c \"" + wfuzz + "\";bash'")
 
 def main():
-    print banner("HTTP Testing")
-    print banner("" + url)
+    print bcolors.WARNING + "#"*78 + bcolors.ENDC
+    print banner("HTTP Testing: " + url)
+    print bcolors.WARNING + "#"*78 + bcolors.ENDC
     print "\n"
     
     # Nikto launches in a new bash window

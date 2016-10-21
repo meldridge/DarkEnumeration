@@ -9,10 +9,10 @@ from multiprocessing import Process, Queue
 sleeptime=60
 
 # Packets per second for Unicorn scan (important!)
-unicorn_pps=500
+unicorn_pps=300
 #unicorn_ports="1-65535"
-unicorn_ports="80"
-unicorn_repeats="2"
+unicorn_ports="80-445"
+unicorn_repeats="1"
 
 # Kick off multiprocessing
 def xProc(targetin, target, port):
@@ -24,16 +24,16 @@ def xProc(targetin, target, port):
 
 # Kick off further enumeration.
 def http(ip_address, port):
-	print "[*] Launching HTTP scripts on " + ip_address
-	httpscript = "~/Scripts/http.py %s" % (ip_address)
-	os.system("gnome-terminal -e 'bash -c \"" + httpscript + "\";bash'")
-	return
+    print "[*] Launching HTTP scripts on %s, port %s" % (ip_address, port)
+    httpscript = "~/Scripts/http.py http %s %s" % (ip_address, port)
+    os.system("gnome-terminal -e 'bash -c \"" + httpscript + "\";bash'")
+    return
 
 def https(ip_address, port):
-	print "[*] Launching HTTPS scripts on " + ip_address
-	httpsscript = "~/Scripts/https.py %s" % (ip_address)
-	os.system("gnome-terminal -e 'bash -c \"" + httpsscript + "\";bash'")	
-     	return
+    print "[*] Launching HTTPS scripts on %s, port %s" % (ip_address, port)
+    httpscript = "~/Scripts/http.py https %s %s" % (ip_address, port)
+    os.system("gnome-terminal -e 'bash -c \"" + httpscript + "\";bash'")	
+    return
 
 def mssql(ip_address, port):
 	print "[*] Launching MSSQL scripts on " + ip_address
@@ -166,12 +166,11 @@ def unicorn(ip_address):
 	for service, port in zip(tcpserv_dict,tcpport_dict): 
 		if (service == "http"):
 			print "[!] Detected HTTP on " + ip_address + ":" + port + " (TCP)"
-			xProc(http, ip_address, None)
+			xProc(http, ip_address, port)
 	
 		elif (service == "https"):
-			print "[!] Detected SSL on " + ip_address + ":" + port + " (TCP)"
-			time.sleep(sleeptime)
-			xProc(https, ip_address, None)
+			print "[!] Detected HTTPS/SSL on " + ip_address + ":" + port + " (TCP)"
+			xProc(https, ip_address, port)
 
 		elif (service == "ssh") and (port == "22"):
 			print "[!] Detected SSH on " + ip_address + ":" + port + " (TCP)"
